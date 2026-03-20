@@ -1218,7 +1218,7 @@ textarea { min-height: 340px; resize: vertical; line-height: 1.75; font-family: 
         ondragover="handleDragOver(event)"
         ondragleave="handleDragLeave(event)"
         ondrop="handleDrop(event)">
-        <input type="file" accept="audio/*" id="audio-input" onchange="handleAudioSelect(event)">
+        <input type="file" accept="audio/*" id="audio-input" onchange="handleAudioSelect(event); console.log('input change fired')">
         <div class="drop-icon-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M9 18V6l3-3 3 3v12M9 18H6a2 2 0 01-2-2V8a2 2 0 012-2h3M15 18h3a2 2 0 002-2V8a2 2 0 00-2-2h-3"/>
@@ -1400,7 +1400,8 @@ function mapPost(p) {
     excerpt: p.excerpt || '',
     body: p.body || '',
     hasAudio: p.has_audio || false,
-    audioName: p.audio_name || null
+    audioName: p.audio_name || null,
+    audioUrl: p.audio_url || null
   };
 }
 
@@ -1532,7 +1533,13 @@ function openPost(id) {
   if (post.hasAudio) {
     playerWrap.style.display = 'flex';
     document.getElementById('audio-file-name').textContent = post.audioName || 'Audio reading';
-    audioEl.src = currentAudioFile ? URL.createObjectURL(currentAudioFile) : '';
+    if (post.audioUrl) {
+      audioEl.src = post.audioUrl;
+    } else if (currentAudioFile) {
+      audioEl.src = URL.createObjectURL(currentAudioFile);
+    } else {
+      audioEl.src = '';
+    }
     resetPlayer();
   } else {
     playerWrap.style.display = 'none';
@@ -1643,11 +1650,17 @@ function handleDrop(e) {
   const f = e.dataTransfer.files[0];
   if (f && f.type.startsWith('audio/')) setAudioFile(f);
 }
-function handleAudioSelect(e) { if (e.target.files[0]) setAudioFile(e.target.files[0]); }
+function handleAudioSelect(e) { 
+  const file = e.target.files[0];
+  console.log('handleAudioSelect fired, file:', file ? file.name : 'none');
+  if (file) setAudioFile(file); 
+}
 function setAudioFile(file) {
+  console.log('Audio file selected:', file.name, 'size:', file.size, 'type:', file.type);
   currentAudioFile = file;
   document.getElementById('audio-chosen-name').textContent = file.name;
   document.getElementById('audio-chosen-preview').classList.add('visible');
+  console.log('currentAudioFile set to:', currentAudioFile ? currentAudioFile.name : 'null');
 }
 
 let editingPostId = null;
@@ -1673,7 +1686,34 @@ function editCurrentPost() {
   if (id) editPost(id);
 }
 
+async function uploadAudio(file) {
+  const ext = file.name.split('.').pop();
+  const fileName = Date.now() + '.' + ext;
+  console.log('Uploading audio:', file.name, 'size:', file.size, 'type:', file.type);
+  console.log('Upload URL:', SUPABASE_URL + '/storage/v1/object/audio/' + fileName);
+  const res = await fetch(SUPABASE_URL + '/storage/v1/object/audio/' + fileName, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  console.log('Audio upload response:', res.status, res.statusText);
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('Audio upload error:', err);
+    throw new Error('Audio upload failed: ' + err);
+  }
+  const publicUrl = SUPABASE_URL + '/storage/v1/object/public/audio/' + fileName;
+  console.log('Audio uploaded successfully:', publicUrl);
+  return publicUrl;
+}
+
 async function publishPost() {
+  console.log('publishPost called, currentAudioFile:', currentAudioFile ? currentAudioFile.name : 'null');
   const title = document.getElementById('post-title-input').value.trim();
   const body = document.getElementById('post-body-input').value.trim();
   if (!title) { showToast('Please add a title'); return; }
@@ -1682,18 +1722,25 @@ async function publishPost() {
   const excerpt = body.split('.')[0] + '.';
 
   try {
+    let audioUrl = null;
+    let audioName = null;
+    if (currentAudioFile) {
+      showToast('Uploading audio…');
+      audioUrl = await uploadAudio(currentAudioFile);
+      audioName = currentAudioFile.name;
+    }
+
     if (editingPostId) {
-      await sbFetch('posts?id=eq.' + editingPostId, {
-        method: 'PATCH',
-        body: JSON.stringify({ title, body, tag, excerpt })
-      });
+      const updateData = { title, body, tag, excerpt };
+      if (audioUrl) { updateData.has_audio = true; updateData.audio_name = audioName; updateData.audio_url = audioUrl; }
+      await sbFetch('posts?id=eq.' + editingPostId, { method: 'PATCH', body: JSON.stringify(updateData) });
       editingPostId = null;
       showToast('Changes saved');
     } else {
       const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
       await sbFetch('posts', {
         method: 'POST',
-        body: JSON.stringify({ title, body, tag, excerpt, date: dateStr, has_audio: !!currentAudioFile, audio_name: currentAudioFile ? currentAudioFile.name : null })
+        body: JSON.stringify({ title, body, tag, excerpt, date: dateStr, has_audio: !!audioUrl, audio_name: audioName, audio_url: audioUrl })
       });
       showToast('Published to the archive');
     }
@@ -1709,7 +1756,7 @@ async function publishPost() {
     await loadPosts();
     setTimeout(() => showPage('archive', null), 400);
   } catch (e) {
-    showToast('Error saving — check connection');
+    showToast('Error: ' + e.message.substring(0, 60));
     console.error(e);
   }
 }
