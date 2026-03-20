@@ -1239,6 +1239,7 @@ textarea { min-height: 340px; resize: vertical; line-height: 1.75; font-family: 
     <div class="submit-row">
       <button class="btn-publish" onclick="publishPost()">Publish</button>
       <button class="btn-draft" onclick="showToast('Saved as draft')">Save Draft</button>
+      <button class="btn-draft" onclick="testConnection()" style="border-color:var(--sage); color:var(--sage);">Test Connection</button>
     </div>
 
     <div class="form-section" style="margin-top:2rem;">
@@ -1365,7 +1366,7 @@ window.addEventListener('scroll', () => {
 const SUPABASE_URL = 'https://igwbjkzzlcvennkkokki.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlnd2Jqa3p6bGN2ZW5ua2tva2tpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5Njk3ODEsImV4cCI6MjA4OTU0NTc4MX0.OxNqd4-UzZ-_kjVVJlijG_Wr1eFfHqKq1noAAjZ5EGk';
 
-async function sbFetch(path, options = {}) {
+window.sbFetch = async function(path, options = {}) {
   const url = SUPABASE_URL + '/rest/v1/' + path;
   const headers = {
     'apikey': SUPABASE_KEY,
@@ -1386,6 +1387,10 @@ async function sbFetch(path, options = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+async function sbFetch(path, options = {}) {
+  return window.sbFetch(path, options);
+}
+
 function mapPost(p) {
   return {
     id: p.id,
@@ -1395,7 +1400,8 @@ function mapPost(p) {
     excerpt: p.excerpt || '',
     body: p.body || '',
     hasAudio: p.has_audio || false,
-    audioName: p.audio_name || null
+    audioName: p.audio_name || null,
+    audioUrl: p.audio_url || null
   };
 }
 
@@ -1527,7 +1533,13 @@ function openPost(id) {
   if (post.hasAudio) {
     playerWrap.style.display = 'flex';
     document.getElementById('audio-file-name').textContent = post.audioName || 'Audio reading';
-    audioEl.src = currentAudioFile ? URL.createObjectURL(currentAudioFile) : '';
+    if (post.audioUrl) {
+      audioEl.src = post.audioUrl;
+    } else if (currentAudioFile) {
+      audioEl.src = URL.createObjectURL(currentAudioFile);
+    } else {
+      audioEl.src = '';
+    }
     resetPlayer();
   } else {
     playerWrap.style.display = 'none';
@@ -1668,6 +1680,32 @@ function editCurrentPost() {
   if (id) editPost(id);
 }
 
+async function uploadAudio(file) {
+  const ext = file.name.split('.').pop();
+  const fileName = Date.now() + '.' + ext;
+  console.log('Uploading audio:', file.name, 'size:', file.size, 'type:', file.type);
+  console.log('Upload URL:', SUPABASE_URL + '/storage/v1/object/audio/' + fileName);
+  const res = await fetch(SUPABASE_URL + '/storage/v1/object/audio/' + fileName, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  console.log('Audio upload response:', res.status, res.statusText);
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('Audio upload error:', err);
+    throw new Error('Audio upload failed: ' + err);
+  }
+  const publicUrl = SUPABASE_URL + '/storage/v1/object/public/audio/' + fileName;
+  console.log('Audio uploaded successfully:', publicUrl);
+  return publicUrl;
+}
+
 async function publishPost() {
   const title = document.getElementById('post-title-input').value.trim();
   const body = document.getElementById('post-body-input').value.trim();
@@ -1677,18 +1715,25 @@ async function publishPost() {
   const excerpt = body.split('.')[0] + '.';
 
   try {
+    let audioUrl = null;
+    let audioName = null;
+    if (currentAudioFile) {
+      showToast('Uploading audio…');
+      audioUrl = await uploadAudio(currentAudioFile);
+      audioName = currentAudioFile.name;
+    }
+
     if (editingPostId) {
-      await sbFetch('posts?id=eq.' + editingPostId, {
-        method: 'PATCH',
-        body: JSON.stringify({ title, body, tag, excerpt })
-      });
+      const updateData = { title, body, tag, excerpt };
+      if (audioUrl) { updateData.has_audio = true; updateData.audio_name = audioName; updateData.audio_url = audioUrl; }
+      await sbFetch('posts?id=eq.' + editingPostId, { method: 'PATCH', body: JSON.stringify(updateData) });
       editingPostId = null;
       showToast('Changes saved');
     } else {
       const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
       await sbFetch('posts', {
         method: 'POST',
-        body: JSON.stringify({ title, body, tag, excerpt, date: dateStr, has_audio: !!currentAudioFile, audio_name: currentAudioFile ? currentAudioFile.name : null })
+        body: JSON.stringify({ title, body, tag, excerpt, date: dateStr, has_audio: !!audioUrl, audio_name: audioName, audio_url: audioUrl })
       });
       showToast('Published to the archive');
     }
@@ -1704,7 +1749,7 @@ async function publishPost() {
     await loadPosts();
     setTimeout(() => showPage('archive', null), 400);
   } catch (e) {
-    showToast('Error saving — check connection');
+    showToast('Error: ' + e.message.substring(0, 60));
     console.error(e);
   }
 }
@@ -1771,6 +1816,18 @@ function exportPosts() {
   a.click();
   URL.revokeObjectURL(url);
   showToast('posts.json downloaded');
+}
+
+async function testConnection() {
+  showToast('Testing connection…');
+  try {
+    const result = await sbFetch('posts?limit=1');
+    showToast('Connected! Posts table found ✓');
+    console.log('Connection test result:', result);
+  } catch (e) {
+    showToast('Connection failed: ' + e.message.substring(0, 60));
+    console.error('Connection test error:', e);
+  }
 }
 
 function showToast(msg) {
