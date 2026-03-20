@@ -515,7 +515,7 @@ nav.scrolled {
   height: 3px;
   border-radius: 100px;
   width: 0%;
-  transition: width 0.15s linear;
+  transition: width 0.1s ease-out;
   pointer-events: none;
 }
 .player-time { font-size: 0.7rem; color: var(--mist); margin-top: 0.4rem; }
@@ -1069,6 +1069,7 @@ textarea { min-height: 340px; resize: vertical; line-height: 1.75; font-family: 
   <ul class="nav-links">
     <li><a href="#" onclick="showPage('archive', this); return false;">Archive</a></li>
     <li id="nav-write-link" style="display:none"><a href="#" onclick="showPage('new-post', this); return false;">New Post</a></li>
+    <li id="nav-home-edit-link" style="display:none"><a href="#" onclick="openHomepageEditor(); return false;">Edit Homepage</a></li>
   </ul>
   <button id="nav-write-btn" class="nav-btn" style="display:none" onclick="isAdmin ? showPage('new-post', null) : openAdminModal()">+ Write</button>
 </nav>
@@ -1076,9 +1077,9 @@ textarea { min-height: 340px; resize: vertical; line-height: 1.75; font-family: 
 <!-- HOME + ARCHIVE (single scrolling page) -->
 <div id="page-home" class="page active">
   <div class="hero">
-    <div class="hero-eyebrow">A publication of shared experience</div>
-    <h1>Step Into Shared <em>Experience</em></h1>
-    <div class="hero-tagline">
+    <div class="hero-eyebrow" id="hero-eyebrow">A publication of shared experience</div>
+    <h1 id="hero-headline">Step Into Shared <em>Experience</em></h1>
+    <div class="hero-tagline" id="hero-tagline">
       <p>If a stranger traveled to the heart of your experience, how long would they need to walk before they found themselves?</p>
       <p>Through the Threshold is a space to step into the stories, myths, and reflections that hold us. Here, art, philosophy, reflection and mysticism become tools.</p>
       <p>The release of your experience will not come through understanding alone, but through offering it as a bridge to someone else's life.</p>
@@ -1177,6 +1178,44 @@ textarea { min-height: 340px; resize: vertical; line-height: 1.75; font-family: 
   </div>
 </div>
 
+<!-- HOMEPAGE EDITOR PAGE -->
+<div id="page-edit-home" class="page">
+  <div class="editor-wrap">
+    <div class="editor-eyebrow">Admin · Homepage</div>
+    <h2>Edit homepage copy</h2>
+    <p>Changes save directly to the database and appear instantly for all visitors.</p>
+
+    <div class="form-section">
+      <h3>Eyebrow text</h3>
+      <div class="form-group">
+        <label>Small line above the headline</label>
+        <input type="text" id="home-eyebrow-input" placeholder="A publication of shared experience">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Headline</h3>
+      <div class="form-group">
+        <label>Main heading</label>
+        <input type="text" id="home-headline-input" placeholder="Step Into Shared Experience">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Tagline</h3>
+      <div class="form-group">
+        <label>Body copy — each paragraph on a new line</label>
+        <textarea id="home-tagline-input" style="min-height:200px;" placeholder="Your welcome copy here…"></textarea>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <button class="btn-publish" onclick="saveHomepageCopy()">Save Changes</button>
+      <button class="btn-draft" onclick="showPage('home', null)">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- NEW POST PAGE -->
 <div id="page-new-post" class="page">
   <div class="editor-wrap">
@@ -1218,7 +1257,7 @@ textarea { min-height: 340px; resize: vertical; line-height: 1.75; font-family: 
         ondragover="handleDragOver(event)"
         ondragleave="handleDragLeave(event)"
         ondrop="handleDrop(event)">
-        <input type="file" accept="audio/*" id="audio-input" onchange="handleAudioSelect(event)">
+        <input type="file" accept="audio/*" id="audio-input" onchange="handleAudioSelect(event); console.log('input change fired')">
         <div class="drop-icon-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M9 18V6l3-3 3 3v12M9 18H6a2 2 0 01-2-2V8a2 2 0 012-2h3M15 18h3a2 2 0 002-2V8a2 2 0 00-2-2h-3"/>
@@ -1443,6 +1482,7 @@ function unlockAdmin() {
   isAdmin = true;
   document.getElementById('nav-write-btn').style.display = '';
   document.getElementById('nav-write-link').style.display = '';
+  document.getElementById('nav-home-edit-link').style.display = '';
 }
 
 function openAdminModal() {
@@ -1593,7 +1633,11 @@ function togglePlay() {
   }
 }
 
+let lastProgressUpdate = 0;
 audioEl.addEventListener('timeupdate', () => {
+  const now = Date.now();
+  if (now - lastProgressUpdate < 100) return;
+  lastProgressUpdate = now;
   if (audioEl.duration) {
     document.getElementById('progress-fill').style.width = (audioEl.currentTime / audioEl.duration * 100) + '%';
     document.getElementById('player-time').textContent = fmt(audioEl.currentTime) + ' / ' + fmt(audioEl.duration);
@@ -1650,11 +1694,17 @@ function handleDrop(e) {
   const f = e.dataTransfer.files[0];
   if (f && f.type.startsWith('audio/')) setAudioFile(f);
 }
-function handleAudioSelect(e) { if (e.target.files[0]) setAudioFile(e.target.files[0]); }
+function handleAudioSelect(e) { 
+  const file = e.target.files[0];
+  console.log('handleAudioSelect fired, file:', file ? file.name : 'none');
+  if (file) setAudioFile(file); 
+}
 function setAudioFile(file) {
+  console.log('Audio file selected:', file.name, 'size:', file.size, 'type:', file.type);
   currentAudioFile = file;
   document.getElementById('audio-chosen-name').textContent = file.name;
   document.getElementById('audio-chosen-preview').classList.add('visible');
+  console.log('currentAudioFile set to:', currentAudioFile ? currentAudioFile.name : 'null');
 }
 
 let editingPostId = null;
@@ -1707,6 +1757,7 @@ async function uploadAudio(file) {
 }
 
 async function publishPost() {
+  console.log('publishPost called, currentAudioFile:', currentAudioFile ? currentAudioFile.name : 'null');
   const title = document.getElementById('post-title-input').value.trim();
   const body = document.getElementById('post-body-input').value.trim();
   if (!title) { showToast('Please add a title'); return; }
@@ -1818,6 +1869,59 @@ function exportPosts() {
   showToast('posts.json downloaded');
 }
 
+// ---- HOMEPAGE COPY ----
+async function loadHomepageCopy() {
+  try {
+    const data = await sbFetch('site_settings?key=in.(hero_eyebrow,hero_headline,hero_tagline)');
+    if (!data || !data.length) return;
+    const settings = {};
+    data.forEach(r => settings[r.key] = r.value);
+    if (settings.hero_eyebrow) document.getElementById('hero-eyebrow').textContent = settings.hero_eyebrow;
+    if (settings.hero_headline) document.getElementById('hero-headline').innerHTML = settings.hero_headline.replace('Experience', '<em>Experience</em>');
+    if (settings.hero_tagline) {
+      document.getElementById('hero-tagline').innerHTML = settings.hero_tagline
+        .split('\n\n').filter(p => p.trim())
+        .map(p => `<p>${p.trim()}</p>`).join('');
+    }
+  } catch(e) { console.error('Could not load homepage copy:', e); }
+}
+
+async function openHomepageEditor() {
+  try {
+    const data = await sbFetch('site_settings?key=in.(hero_eyebrow,hero_headline,hero_tagline)');
+    const settings = {};
+    (data || []).forEach(r => settings[r.key] = r.value);
+    document.getElementById('home-eyebrow-input').value = settings.hero_eyebrow || '';
+    document.getElementById('home-headline-input').value = settings.hero_headline || '';
+    document.getElementById('home-tagline-input').value = settings.hero_tagline || '';
+  } catch(e) { console.error(e); }
+  showPage('edit-home', null);
+}
+
+async function saveHomepageCopy() {
+  const eyebrow = document.getElementById('home-eyebrow-input').value.trim();
+  const headline = document.getElementById('home-headline-input').value.trim();
+  const tagline = document.getElementById('home-tagline-input').value.trim();
+  if (!headline) { showToast('Please add a headline'); return; }
+  try {
+    await sbFetch('site_settings', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify([
+        { key: 'hero_eyebrow', value: eyebrow },
+        { key: 'hero_headline', value: headline },
+        { key: 'hero_tagline', value: tagline }
+      ])
+    });
+    await loadHomepageCopy();
+    showToast('Homepage updated');
+    setTimeout(() => showPage('home', null), 600);
+  } catch(e) {
+    showToast('Error saving — check connection');
+    console.error(e);
+  }
+}
+
 async function testConnection() {
   showToast('Testing connection…');
   try {
@@ -1838,6 +1942,7 @@ function showToast(msg) {
 }
 
 loadPosts();
+loadHomepageCopy();
 </script>
 </body>
 </html>
