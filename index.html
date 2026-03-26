@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Through the Threshold</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --night: #0E0B08;
+  --night-2: #1A1410;
+  --night-3: #241C14;
+  --ember: #C4623A;
+  --ember-dim: #8B3E22;
+  --ember-glow: rgba(196,98,58,0.18);
+  --gold: #C9952A;
+  --gold-dim: rgba(201,149,42,0.15);
+  --sage: #7A9E7E;
+  --cream: #F5EDD8;
+  --cream-dim: rgba(245,237,216,0.6);
+  --cream-faint: rgba(245,237,216,0.08);
+  --ink: #2A1F14;
+  --mist: rgba(245,237,216,0.35);
+  --border: rgba(245,237,216,0.1);
+  --border-mid: rgba(245,237,216,0.2);
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'DM Sans', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  background: var(--night);
+  color: var(--cream);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ---- CANVAS BG ---- */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+/* ---- NAV ---- */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  padding: 0 2.5rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.4s, border-color 0.4s;
+  border-bottom: 1px solid transparent;
+}
+nav.scrolled {
+  background: rgba(14,11,8,0.92);
+  border-color: var(--border);
+  backdrop-filter: blur(12px);
+}
+.nav-brand {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 300;
+  color: var(--cream);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.nav-brand:hover { color: var(--ember); }
+.nav-brand em { color: var(--ember); font-style: normal; }
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a {
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mist);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover, .nav-links a.active { color: var(--cream); }
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--ember);
+  color: var(--ember);
+  padding: 0.45rem 1.2rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.nav-btn:hover { background: var(--ember); color: white; }
+
+/* ---- PAGES ---- */
+.page { display: none; animation: fadeUp 0.5s ease both; }
+.page.active { display: block; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- HERO ---- */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8rem 2rem 5rem;
+  z-index: 1;
+}
+.hero-eyebrow {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ember);
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadeUp 0.7s 0.2s ease both;
+}
+.hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(3rem, 8vw, 6.5rem);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.05;
+  color: var(--cream);
+  margin-bottom: 2.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.35s ease both;
+  max-width: 900px;
+}
+.hero h1 em { font-style: normal; color: var(--ember); }
+.hero-tagline {
+  max-width: 600px;
+  font-size: 1.05rem;
+  font-weight: 300;
+  line-height: 1.85;
+  color: var(--cream-dim);
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.5s ease both;
+}
+.hero-tagline p { margin-bottom: 1.1rem; }
+.hero-tagline p:last-child { margin-bottom: 0; font-style: italic; color: var(--cream); }
+.hero-cta {
+  opacity: 0;
+  animation: fadeUp 0.8s 0.7s ease both;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.btn-primary {
+  background: var(--ember);
+  color: white;
+  border: none;
+  padding: 0.85rem 2.2rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.btn-primary:hover { background: #a84f2c; transform: translateY(-2px); }
+.btn-ghost {
+  background: transparent;
+  color: var(--cream-dim);
+  border: 1px solid var(--border-mid);
+  padding: 0.85rem 2.2rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.btn-ghost:hover { border-color: var(--cream-dim); color: var(--cream); transform: translateY(-2px); }
+
+.hero-scroll-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0;
+  animation: fadeUp 1s 1.2s ease both;
+  margin-top: 3rem;
+}
+.scroll-line {
+  width: 1px;
+  height: 48px;
+  background: linear-gradient(to bottom, var(--ember), transparent);
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.4; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.1); }
+}
+.scroll-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mist);
+}
+
+/* ---- DIVIDER ---- */
+.section-divider {
+  width: 60px;
+  height: 1px;
+  background: var(--ember);
+  margin: 0 auto 3rem;
+  opacity: 0.5;
+}
+
+/* ---- ARCHIVE ---- */
+.archive-section {
+  position: relative;
+  z-index: 1;
+  padding-top: 2rem;
+}
+.archive-header {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 5rem 2rem 2rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+.archive-header h2 {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--cream);
+  line-height: 1.2;
+}
+.archive-header h2 span { color: var(--ember); font-style: normal; }
+
+.filter-bar {
+  max-width: 900px;
+  margin: 0 auto 2rem;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1.5rem;
+}
+.filter-tags-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  width: 100%;
+}
+.filter-tags-row::-webkit-scrollbar { display: none; }
+.take-me-btn { margin-left: auto !important; }
+.filter-label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mist); margin-right: 0.5rem; }
+.tag-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--mist);
+  padding: 0.3rem 0.9rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tag-btn:hover { border-color: var(--border-mid); color: var(--cream-dim); }
+.tag-btn.active { background: var(--ember); border-color: var(--ember); color: white; }
+
+/* Posts */
+.posts-grid {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 2rem 6rem;
+  display: grid;
+  gap: 1px;
+}
+
+.post-card {
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  padding: 2rem 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.post-card::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 1px;
+  background: var(--ember);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.post-card:hover::after { transform: scaleX(1); }
+.post-card:hover .post-title { color: var(--ember); }
+.post-card:hover .post-read-arrow { transform: translateX(6px); opacity: 1; }
+
+.post-meta { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+.post-tag {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.65rem;
+  border-radius: 2px;
+  background: var(--ember-glow);
+  color: var(--ember);
+  border: 1px solid rgba(196,98,58,0.3);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+.post-tag.sage { background: rgba(122,158,126,0.12); color: var(--sage); border-color: rgba(122,158,126,0.3); }
+.post-tag.gold { background: var(--gold-dim); color: var(--gold); border-color: rgba(201,149,42,0.3); }
+
+.post-date { font-size: 0.75rem; color: var(--mist); letter-spacing: 0.04em; }
+.post-title {
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  font-weight: 400;
+  color: var(--cream);
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+  transition: color 0.3s;
+}
+.post-excerpt {
+  font-size: 0.88rem;
+  color: var(--mist);
+  line-height: 1.7;
+  font-weight: 300;
+  max-width: 580px;
+}
+.audio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  font-size: 0.72rem;
+  color: var(--sage);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.audio-pill svg { width: 12px; height: 12px; }
+
+.post-read-arrow {
+  font-size: 1.4rem;
+  color: var(--ember);
+  opacity: 0.4;
+  transition: transform 0.3s, opacity 0.3s;
+  flex-shrink: 0;
+  font-family: var(--serif);
+  align-self: center;
+}
+
+/* Reveal animation for cards */
+.post-card {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: cardReveal 0.5s ease both;
+}
+@keyframes cardReveal {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- SINGLE POST ---- */
+.post-view {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 5.5rem 2rem 6rem;
+  position: relative;
+  z-index: 1;
+}
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--mist);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0;
+  transition: color 0.2s;
+}
+.back-btn:hover { color: var(--ember); }
+
+.post-view h1 {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--cream);
+  line-height: 1.2;
+  margin-bottom: 1.25rem;
+}
+.post-view .post-date { font-size: 0.8rem; color: var(--mist); letter-spacing: 0.06em; }
+
+.post-meta-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.share-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--mist);
+  padding: 0.4rem 1rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s;
+  white-space: nowrap;
+}
+.share-btn:hover { border-color: var(--border-mid); color: var(--cream-dim); }
+.share-btn.copied { border-color: var(--sage); color: var(--sage); }
+.share-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+/* Audio player */
+.audio-player {
+  background: var(--night-3);
+  border: 1px solid var(--border-mid);
+  border-radius: 4px;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.play-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--ember);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  position: relative;
+}
+.play-btn::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--ember);
+  opacity: 0;
+  transition: all 0.3s;
+  transform: scale(0.8);
+}
+.play-btn:hover::after { opacity: 0.4; transform: scale(1); }
+.play-btn:hover { background: #a84f2c; }
+.play-btn svg { width: 15px; height: 15px; }
+
+.player-info { flex: 1; min-width: 0; }
+.player-title { font-size: 0.8rem; color: var(--cream-dim); margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.04em; }
+.progress-bar-wrap {
+  background: rgba(245,237,216,0.08);
+  border-radius: 100px;
+  height: 3px;
+  cursor: pointer;
+  position: relative;
+}
+.progress-bar-fill {
+  background: var(--ember);
+  height: 3px;
+  border-radius: 100px;
+  width: 0%;
+  transition: width 0.1s ease-out;
+  pointer-events: none;
+}
+.player-time { font-size: 0.7rem; color: var(--mist); margin-top: 0.4rem; }
+
+/* Post body */
+.post-rule {
+  width: 40px; height: 1px;
+  background: var(--ember);
+  opacity: 0.5;
+  margin-bottom: 2.5rem;
+}
+.post-body {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  line-height: 2;
+  color: var(--cream-dim);
+}
+.post-body p { margin-bottom: 1.8rem; }
+.post-body p:first-child { color: var(--cream-dim); }
+.post-body p:first-child::first-letter {
+  font-size: 4rem;
+  font-weight: 600;
+  float: left;
+  line-height: 0.8;
+  margin-right: 0.08em;
+  margin-top: 0.1em;
+  color: var(--ember);
+}
+
+/* ---- EDITOR ---- */
+.editor-wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 8rem 2rem 6rem;
+  position: relative;
+  z-index: 1;
+}
+.editor-eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ember);
+  margin-bottom: 1rem;
+}
+.editor-wrap h2 {
+  font-family: var(--serif);
+  font-size: 2.2rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--cream);
+  margin-bottom: 0.5rem;
+}
+.editor-wrap > p {
+  color: var(--mist);
+  font-size: 0.9rem;
+  margin-bottom: 3rem;
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+.form-section {
+  background: var(--night-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.25rem;
+  transition: border-color 0.3s;
+}
+.form-section:focus-within { border-color: var(--border-mid); }
+.form-section h3 {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mist);
+  margin-bottom: 1.25rem;
+}
+
+.form-group { margin-bottom: 1.25rem; }
+.form-group:last-child { margin-bottom: 0; }
+label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--mist);
+  margin-bottom: 0.5rem;
+}
+
+input[type="text"], select, textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--night-3);
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 300;
+  transition: border-color 0.2s;
+  outline: none;
+  appearance: none;
+}
+input[type="text"]::placeholder, textarea::placeholder { color: rgba(245,237,216,0.2); }
+input[type="text"]:focus, select:focus, textarea:focus { border-color: var(--ember); }
+textarea { min-height: 340px; resize: vertical; line-height: 1.75; font-family: var(--serif); font-size: 1.05rem; }
+
+.tags-select { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.tag-select-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--mist);
+  padding: 0.35rem 0.9rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tag-select-btn.active { background: var(--ember); border-color: var(--ember); color: white; }
+.tag-select-btn:hover:not(.active) { border-color: var(--border-mid); color: var(--cream-dim); }
+
+/* Audio upload zone */
+.audio-drop-zone {
+  border: 1px dashed var(--border-mid);
+  border-radius: 4px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+}
+.audio-drop-zone:hover, .audio-drop-zone.dragover {
+  border-color: var(--ember);
+  background: var(--ember-glow);
+}
+.audio-drop-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  width: 100%; height: 100%; z-index: 2;
+  border: none; background: none; padding: 0;
+}
+.drop-icon-wrap {
+  width: 48px; height: 48px;
+  border: 1px solid var(--border-mid);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  transition: border-color 0.25s;
+}
+.audio-drop-zone:hover .drop-icon-wrap { border-color: var(--ember); }
+.drop-icon-wrap svg { width: 20px; height: 20px; color: var(--mist); }
+.drop-text { font-size: 0.9rem; color: var(--cream-dim); margin-bottom: 0.3rem; }
+.drop-hint { font-size: 0.75rem; color: var(--mist); }
+
+.audio-file-chosen {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(122,158,126,0.08);
+  border: 1px solid rgba(122,158,126,0.2);
+  border-radius: 3px;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+.audio-file-chosen.visible { display: flex; }
+.audio-file-chosen svg { width: 16px; height: 16px; color: var(--sage); flex-shrink: 0; }
+.audio-file-chosen span { font-size: 0.82rem; color: var(--cream-dim); }
+
+/* Editor toolbar */
+.editor-toolbar {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+}
+.toolbar-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--mist);
+  width: 30px; height: 30px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+.toolbar-btn:hover { border-color: var(--border); color: var(--cream-dim); }
+
+/* Submit */
+.submit-row { display: flex; gap: 1rem; align-items: center; margin-top: 1.75rem; }
+.btn-publish {
+  background: var(--ember);
+  color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.btn-publish:hover { background: #a84f2c; transform: translateY(-1px); }
+.btn-draft {
+  background: transparent;
+  color: var(--mist);
+  border: 1px solid var(--border);
+  padding: 0.8rem 1.5rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-draft:hover { border-color: var(--border-mid); color: var(--cream-dim); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--night-3);
+  border: 1px solid var(--border-mid);
+  color: var(--cream);
+  padding: 1rem 1.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  transform: translateY(5rem);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  letter-spacing: 0.02em;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ember);
+  flex-shrink: 0;
+}
+
+.edit-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--mist);
+  padding: 0.3rem 0.75rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.edit-btn:hover { border-color: var(--ember); color: var(--ember); }
+
+.delete-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--mist);
+  padding: 0.3rem 0.75rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.delete-btn:hover { border-color: #e05555; color: #e05555; }
+
+/* Delete confirm modal */
+#delete-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(14,11,8,0.92);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+}
+#delete-modal.visible { display: flex; }
+.delete-modal-box {
+  background: var(--night-2);
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+.delete-modal-box h3 {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--cream);
+  margin-bottom: 0.6rem;
+}
+.delete-modal-box p {
+  font-size: 0.82rem;
+  color: var(--mist);
+  margin-bottom: 1.75rem;
+  line-height: 1.6;
+}
+.delete-modal-box .delete-title-preview {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--cream-dim);
+}
+.delete-confirm-btn {
+  width: 100%;
+  background: #8B2020;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 0.75rem;
+}
+.delete-confirm-btn:hover { background: #a82a2a; }
+.delete-cancel-btn {
+  display: block;
+  background: none;
+  border: none;
+  color: var(--mist);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin: 0 auto;
+  letter-spacing: 0.06em;
+  transition: color 0.2s;
+}
+.delete-cancel-btn:hover { color: var(--cream-dim); }
+
+/* Empty state */
+.empty-state {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--mist);
+  font-size: 0.9rem;
+  font-style: italic;
+  font-family: var(--serif);
+}
+
+/* Admin password modal */
+#admin-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(14,11,8,0.92);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+}
+#admin-modal.visible { display: flex; }
+.admin-modal-box {
+  background: var(--night-2);
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+.admin-eyebrow {
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ember);
+  margin-bottom: 1rem;
+}
+.admin-modal-box h3 {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--cream);
+  margin-bottom: 0.5rem;
+}
+.admin-modal-box p {
+  font-size: 0.82rem;
+  color: var(--mist);
+  margin-bottom: 1.75rem;
+  line-height: 1.6;
+}
+#admin-password-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--night-3);
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  text-align: center;
+  letter-spacing: 0.2em;
+  outline: none;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s;
+  box-shadow: none;
+}
+#admin-password-input:focus { border-color: var(--ember); }
+#admin-password-input.error { border-color: #e05555; animation: shake 0.35s ease; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.admin-modal-enter {
+  width: 100%;
+  background: var(--ember);
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.admin-modal-enter:hover { background: #a84f2c; }
+.admin-modal-cancel {
+  display: block;
+  background: none;
+  border: none;
+  color: var(--mist);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin: 1rem auto 0;
+  letter-spacing: 0.06em;
+  transition: color 0.2s;
+}
+.admin-modal-cancel:hover { color: var(--cream-dim); }
+
+/* Next post */
+.next-post {
+  margin-top: 4rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--border);
+}
+.next-post-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mist);
+  margin-bottom: 1.25rem;
+}
+.next-post-card {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.5rem 1.75rem;
+  cursor: pointer;
+  transition: border-color 0.3s, background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+.next-post-card:hover {
+  border-color: var(--ember);
+  background: var(--ember-glow);
+}
+.next-post-card:hover .next-post-arrow { transform: translateX(5px); color: var(--ember); }
+.next-post-title {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--cream);
+  line-height: 1.3;
+  margin-bottom: 0.35rem;
+}
+.next-post-excerpt {
+  font-size: 0.82rem;
+  color: var(--mist);
+  line-height: 1.6;
+  font-weight: 300;
+}
+.next-post-arrow {
+  font-size: 1.4rem;
+  color: var(--mist);
+  font-family: var(--serif);
+  flex-shrink: 0;
+  transition: transform 0.3s, color 0.3s;
+}
+#reading-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  width: 0%;
+  background: var(--ember);
+  z-index: 999;
+  transition: width 0.1s linear, opacity 0.4s;
+  opacity: 0;
+  pointer-events: none;
+}
+
+  nav { padding: 0 1.25rem; }
+  .nav-links { display: none; }
+  .archive-header, .filter-bar, .posts-grid { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .post-read-arrow { display: none; }
+  .editor-wrap, .post-view { padding: 6rem 1.25rem 4rem; }
+  .hero { padding: 7rem 1.25rem 4rem; }
+}
+
+@media (max-width: 640px) {
+  .filter-bar { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .filter-tags-row { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tag-btn { font-size: 0.7rem; padding: 0.35rem 0.8rem; white-space: nowrap; flex-shrink: 0; }
+  .take-me-btn { margin-left: 1rem !important; }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="reading-progress"></div>
+
+<nav id="main-nav">
+  <div style="display:flex; flex-direction:column; gap:0.15rem; cursor:pointer;" onclick="showPage('home', null)">
+    <div class="nav-brand">Through <em>the</em> Threshold</div>
+    <div style="font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--mist); font-family:var(--sans); font-weight:400;">Juvae Sewpersad</div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#" onclick="showPage('archive', this); return false;">Archive</a></li>
+    <li id="nav-write-link" style="display:none"><a href="#" onclick="showPage('new-post', this); return false;">New Post</a></li>
+    <li id="nav-home-edit-link" style="display:none"><a href="#" onclick="openHomepageEditor(); return false;">Edit Homepage</a></li>
+  </ul>
+  <button id="nav-write-btn" class="nav-btn" style="display:none" onclick="isAdmin ? showPage('new-post', null) : openAdminModal()">+ Write</button>
+  <button id="nav-home-edit-btn" class="nav-btn" style="display:none; background:transparent; border-color:var(--mist); color:var(--mist); margin-left:0.5rem;" onclick="openHomepageEditor()">Edit Homepage</button>
+</nav>
+
+<!-- HOME + ARCHIVE (single scrolling page) -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-eyebrow" id="hero-eyebrow">A publication of shared experience</div>
+    <h1 id="hero-headline">Step Into Shared <em>Experience</em></h1>
+    <div class="hero-tagline" id="hero-tagline">
+      <p>If a stranger traveled to the heart of your experience, how long would they need to walk before they found themselves?</p>
+      <p>Through the Threshold is a space to step into the stories, myths, and reflections that hold us. Here, art, philosophy, reflection and mysticism become tools.</p>
+      <p>The release of your experience will not come through understanding alone, but through offering it as a bridge to someone else's life.</p>
+      <p>Welcome.</p>
+    </div>
+    <div class="hero-scroll-hint">
+      <div class="scroll-line"></div>
+      <div class="scroll-label">Scroll</div>
+    </div>
+  </div>
+
+  <div class="archive-section">
+    <div class="filter-bar">
+      <span class="filter-label">Filter by</span>
+      <div class="filter-tags-row">
+        <button class="tag-btn active" onclick="filterPosts('all', this)">All</button>
+        <button class="tag-btn" onclick="filterPosts('Essay', this)">Essay</button>
+        <button class="tag-btn" onclick="filterPosts('Reflection', this)">Reflection</button>
+        <button class="tag-btn" onclick="filterPosts('Story', this)">Story</button>
+        <button class="tag-btn" onclick="filterPosts('Letter', this)">Letter</button>
+        <button class="tag-btn take-me-btn" onclick="openRandomPost()" style="border-color:var(--ember); color:var(--ember); white-space:nowrap; margin-left:auto;">✦ Take me somewhere</button>
+      </div>
+    </div>
+    <div class="posts-grid" id="posts-container"></div>
+  </div>
+</div>
+
+<!-- ARCHIVE PAGE (nav link target) -->
+<div id="page-archive" class="page">
+  <div class="archive-section">
+    <div class="archive-header">
+      <h2>The <span>Archive</span></h2>
+    </div>
+    <div class="filter-bar">
+      <span class="filter-label">Filter by</span>
+      <div class="filter-tags-row">
+        <button class="tag-btn active" onclick="filterPosts('all', this)">All</button>
+        <button class="tag-btn" onclick="filterPosts('Essay', this)">Essay</button>
+        <button class="tag-btn" onclick="filterPosts('Reflection', this)">Reflection</button>
+        <button class="tag-btn" onclick="filterPosts('Story', this)">Story</button>
+        <button class="tag-btn" onclick="filterPosts('Letter', this)">Letter</button>
+        <button class="tag-btn take-me-btn" onclick="openRandomPost()" style="border-color:var(--ember); color:var(--ember); white-space:nowrap; margin-left:auto;">✦ Take me somewhere</button>
+      </div>
+    </div>
+    <div class="posts-grid" id="posts-container-2"></div>
+  </div>
+</div>
+
+<!-- SINGLE POST PAGE -->
+<div id="page-post" class="page">
+  <div class="post-view">
+    <button class="back-btn" onclick="showPage('archive', null)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12"><path d="M10 13L5 8l5-5"/></svg>
+      Back to archive
+    </button>
+    <h1 id="post-title-display"></h1>
+    <div class="post-meta-row">
+      <div style="display:flex; flex-direction:column; gap:1.25rem;">
+        <span id="post-date-display" class="post-date"></span>
+        <span id="post-tag-display" class="post-tag" style="align-self:flex-start;"></span>
+      </div>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <button class="edit-btn admin-only" style="display:none" id="post-edit-btn" onclick="editCurrentPost()">Edit</button>
+        <button class="delete-btn admin-only" style="display:none" id="post-delete-btn" onclick="openDeleteModalFromPost()">Delete</button>
+        <button class="share-btn" id="share-btn" onclick="sharePost()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="3" r="1.5"/><circle cx="12" cy="13" r="1.5"/><circle cx="3" cy="8" r="1.5"/>
+            <line x1="10.5" y1="3.9" x2="4.5" y2="7.1"/><line x1="4.5" y1="8.9" x2="10.5" y2="12.1"/>
+          </svg>
+          <span id="share-btn-label">Share</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="audio-player-wrap" class="audio-player" style="display:none">
+      <button class="play-btn" id="play-pause-btn" onclick="togglePlay()">
+        <svg id="play-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6V2z"/></svg>
+        <svg id="pause-icon" viewBox="0 0 16 16" fill="currentColor" style="display:none"><rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/></svg>
+      </button>
+      <div class="player-info">
+        <div class="player-title" id="audio-file-name">audio.mp3</div>
+        <div class="progress-bar-wrap" id="progress-wrap" onclick="seekAudio(event)">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <div class="player-time" id="player-time">0:00 / 0:00</div>
+      </div>
+    </div>
+
+    <div class="post-rule"></div>
+    <div class="post-body" id="post-body-display"></div>
+
+    <div class="next-post" id="next-post-section" style="display:none">
+      <div class="next-post-label" id="next-post-label">Continue reading</div>
+      <div class="next-post-card" id="next-post-card" onclick="openNextPost()">
+        <div>
+          <div class="next-post-title" id="next-post-title"></div>
+          <div class="next-post-excerpt" id="next-post-excerpt"></div>
+        </div>
+        <div class="next-post-arrow">→</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOMEPAGE EDITOR PAGE -->
+<div id="page-edit-home" class="page">
+  <div class="editor-wrap">
+    <div class="editor-eyebrow">Admin · Homepage</div>
+    <h2>Edit homepage copy</h2>
+    <p>Changes save directly to the database and appear instantly for all visitors.</p>
+
+    <div class="form-section">
+      <h3>Eyebrow text</h3>
+      <div class="form-group">
+        <label>Small line above the headline</label>
+        <input type="text" id="home-eyebrow-input" placeholder="A publication of shared experience">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Headline</h3>
+      <div class="form-group">
+        <label>Main heading</label>
+        <input type="text" id="home-headline-input" placeholder="Step Into Shared Experience">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Tagline</h3>
+      <div class="form-group">
+        <label>Body copy — each paragraph on a new line</label>
+        <textarea id="home-tagline-input" style="min-height:200px;" placeholder="Your welcome copy here…"></textarea>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <button class="btn-publish" onclick="saveHomepageCopy()">Save Changes</button>
+      <button class="btn-draft" onclick="showPage('home', null)">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW POST PAGE -->
+<div id="page-new-post" class="page">
+  <div class="editor-wrap">
+    <div class="editor-eyebrow">Admin · New Post</div>
+    <h2>Write into the threshold</h2>
+    <p>Craft your piece below, attach an audio reading, then publish it to the archive for others to step into.</p>
+
+    <div class="form-section">
+      <h3>Post Details</h3>
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="post-title-input" placeholder="Name this passage…">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <div class="tags-select" id="tag-selector">
+          <button class="tag-select-btn" onclick="selectTag(this, 'Essay')">Essay</button>
+          <button class="tag-select-btn" onclick="selectTag(this, 'Reflection')">Reflection</button>
+          <button class="tag-select-btn" onclick="selectTag(this, 'Story')">Story</button>
+          <button class="tag-select-btn" onclick="selectTag(this, 'Letter')">Letter</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Writing</h3>
+      <div class="editor-toolbar">
+        <button class="toolbar-btn" title="Bold" onclick="formatText('bold')"><b>B</b></button>
+        <button class="toolbar-btn" title="Italic" onclick="formatText('italic')"><i>I</i></button>
+        <button class="toolbar-btn" title="Heading" style="font-size:0.65rem;width:auto;padding:0 6px;">H2</button>
+        <button class="toolbar-btn" title="Quote" style="font-size:1rem; font-family: serif;">"</button>
+      </div>
+      <textarea id="post-body-input" placeholder="Begin here…"></textarea>
+    </div>
+
+    <div class="form-section">
+      <h3>Audio Transcript</h3>
+      <div id="current-audio-status" style="display:none; align-items:center; justify-content:space-between; background:rgba(122,158,126,0.08); border:1px solid rgba(122,158,126,0.2); border-radius:3px; padding:0.75rem 1rem; margin-bottom:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7A9E7E" stroke-width="1.8" width="16" height="16"><path d="M9 18V6l3-3 3 3v12"/><circle cx="12" cy="13" r="2"/></svg>
+          <span id="current-audio-name" style="font-size:0.82rem; color:var(--cream-dim);"></span>
+        </div>
+        <button onclick="removeAudio()" style="background:transparent; border:1px solid rgba(224,85,85,0.4); color:#e05555; padding:0.25rem 0.7rem; border-radius:2px; font-family:var(--sans); font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer;">Remove</button>
+      </div>
+      <div class="audio-drop-zone" id="drop-zone"
+        ondragover="handleDragOver(event)"
+        ondragleave="handleDragLeave(event)"
+        ondrop="handleDrop(event)">
+        <input type="file" accept="audio/*" id="audio-input" onchange="handleAudioSelect(event); console.log('input change fired')">
+        <div class="drop-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 18V6l3-3 3 3v12M9 18H6a2 2 0 01-2-2V8a2 2 0 012-2h3M15 18h3a2 2 0 002-2V8a2 2 0 00-2-2h-3"/>
+            <circle cx="12" cy="13" r="2"/>
+          </svg>
+        </div>
+        <div class="drop-text" id="drop-text">Drop your audio reading here</div>
+        <div class="drop-hint">MP3, M4A, WAV, OGG — or click to browse</div>
+      </div>
+      <div class="audio-file-chosen" id="audio-chosen-preview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M9 18V6l3-3 3 3v12"/><circle cx="12" cy="13" r="2"/>
+        </svg>
+        <span id="audio-chosen-name">No file chosen</span>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <button class="btn-publish" onclick="publishPost()">Publish</button>
+      <button class="btn-draft" onclick="showToast('Saved as draft')">Save Draft</button>
+      <button class="btn-draft" onclick="testConnection()" style="border-color:var(--sage); color:var(--sage);">Test Connection</button>
+    </div>
+
+    <div class="form-section" style="margin-top:2rem;">
+      <h3>Posts data</h3>
+      <p style="font-size:0.82rem; color:var(--mist); line-height:1.6; margin-bottom:1.25rem;">Export all posts as a JSON file to back them up, or import a previously saved file to restore them on any device.</p>
+      <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+        <button class="btn-draft" onclick="exportPosts()">
+          ↓ Export posts.json
+        </button>
+        <label style="display:inline-flex; align-items:center; gap:0.5rem; background:transparent; border:1px solid var(--border); color:var(--mist); padding:0.8rem 1.5rem; border-radius:2px; font-family:var(--sans); font-size:0.8rem; font-weight:400; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(245,237,216,0.2)'; this.style.color='rgba(245,237,216,0.6)'" onmouseout="this.style.borderColor=''; this.style.color=''">
+          ↑ Import posts.json
+          <input type="file" accept=".json" onchange="importPosts(event)" style="display:none;">
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div id="delete-modal">
+  <div class="delete-modal-box">
+    <div class="admin-eyebrow">Admin · Delete</div>
+    <h3>Remove this passage?</h3>
+    <p>This will permanently delete <span class="delete-title-preview" id="delete-title-preview"></span>. This cannot be undone.</p>
+    <button class="delete-confirm-btn" onclick="confirmDelete()">Yes, delete it</button>
+    <button class="delete-cancel-btn" onclick="closeDeleteModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- Admin password modal -->
+<div id="admin-modal">
+  <div class="admin-modal-box">
+    <div class="admin-eyebrow">Admin access</div>
+    <h3>Enter the threshold</h3>
+    <p>This area is private. Enter your password to continue.</p>
+    <input type="password" id="admin-password-input" placeholder="••••••••" onkeydown="if(event.key==='Enter') checkAdminPassword()">
+    <button class="admin-modal-enter" onclick="checkAdminPassword()">Enter</button>
+    <button class="admin-modal-cancel" onclick="closeAdminModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toast-msg">Published</span>
+</div>
+
+<audio id="audio-el" style="display:none"></audio>
+
+<script>
+// ---- ANIMATED BACKGROUND ----
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function Particle() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.size = Math.random() * 1.2 + 0.3;
+    this.speedX = (Math.random() - 0.5) * 0.15;
+    this.speedY = (Math.random() - 0.5) * 0.15;
+    this.opacity = Math.random() * 0.4 + 0.05;
+    this.color = Math.random() > 0.7 ? '#C4623A' : '#F5EDD8';
+  }
+
+  Particle.prototype.update = function() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    if (this.x < 0) this.x = W;
+    if (this.x > W) this.x = 0;
+    if (this.y < 0) this.y = H;
+    if (this.y > H) this.y = 0;
+  };
+
+  function init() {
+    resize();
+    particles = [];
+    const count = Math.floor((W * H) / 14000);
+    for (let i = 0; i < count; i++) particles.push(new Particle());
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.opacity;
+      ctx.fill();
+      p.update();
+    });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', init);
+  init();
+  draw();
+})();
+
+// ---- NAV SCROLL + READING PROGRESS ----
+const progressBar = document.getElementById('reading-progress');
+window.addEventListener('scroll', () => {
+  document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 40);
+  const postPage = document.getElementById('page-post');
+  if (postPage.classList.contains('active')) {
+    const body = document.getElementById('post-body-display');
+    if (body) {
+      const rect = body.getBoundingClientRect();
+      const total = body.offsetHeight + rect.top + window.scrollY - window.innerHeight;
+      const pct = Math.min(100, Math.max(0, (window.scrollY / total) * 100));
+      progressBar.style.width = pct + '%';
+    }
+  }
+});
+
+// ---- SUPABASE ----
+const SUPABASE_URL = 'https://igwbjkzzlcvennkkokki.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlnd2Jqa3p6bGN2ZW5ua2tva2tpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5Njk3ODEsImV4cCI6MjA4OTU0NTc4MX0.OxNqd4-UzZ-_kjVVJlijG_Wr1eFfHqKq1noAAjZ5EGk';
+
+window.sbFetch = async function(path, options = {}) {
+  const url = SUPABASE_URL + '/rest/v1/' + path;
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': options.prefer || 'return=representation',
+    ...options.headers
+  };
+  console.log('sbFetch:', options.method || 'GET', url);
+  const res = await fetch(url, { ...options, headers });
+  console.log('sbFetch response:', res.status, res.statusText);
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('sbFetch error body:', errText);
+    throw new Error(errText);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function sbFetch(path, options = {}) {
+  return window.sbFetch(path, options);
+}
+
+function mapPost(p) {
+  return {
+    id: p.id,
+    title: p.title,
+    tag: p.tag || 'Essay',
+    date: p.date || '',
+    excerpt: p.excerpt || '',
+    body: p.body || '',
+    hasAudio: p.has_audio || false,
+    audioName: p.audio_name || null,
+    audioUrl: p.audio_url || null
+  };
+}
+
+// ---- DATA ----
+const tagColors = { Essay: '', Reflection: 'sage', Story: 'gold', Letter: '' };
+
+let posts = [];
+let selectedTag = null;
+let currentAudioFile = null;
+const audioEl = document.getElementById('audio-el');
+let isPlaying = false;
+let currentFilter = 'all';
+
+async function loadPosts() {
+  try {
+    showLoadingState();
+    const data = await sbFetch('posts?order=created_at.desc');
+    posts = (data || []).map(mapPost);
+    renderPosts(currentFilter);
+  } catch (e) {
+    console.error(e);
+    showToast('Could not load posts');
+    renderPosts(currentFilter);
+  }
+}
+
+function showLoadingState() {
+  ['posts-container', 'posts-container-2'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) c.innerHTML = '<div class="empty-state" style="opacity:0.4;">Loading passages…</div>';
+  });
+}
+
+// ---- ADMIN PASSWORD GATE ----
+const ADMIN_PASSWORD = 'threshold2026';
+let isAdmin = false;
+
+function unlockAdmin() {
+  isAdmin = true;
+  document.getElementById('nav-write-btn').style.display = '';
+  document.getElementById('nav-write-link').style.display = '';
+  document.getElementById('nav-home-edit-link').style.display = '';
+  document.getElementById('nav-home-edit-btn').style.display = '';
+}
+
+function openAdminModal() {
+  document.getElementById('admin-modal').classList.add('visible');
+  setTimeout(() => document.getElementById('admin-password-input').focus(), 100);
+}
+
+function closeAdminModal() {
+  document.getElementById('admin-modal').classList.remove('visible');
+  document.getElementById('admin-password-input').value = '';
+  document.getElementById('admin-password-input').classList.remove('error');
+}
+
+function checkAdminPassword() {
+  const input = document.getElementById('admin-password-input');
+  if (input.value === ADMIN_PASSWORD) {
+    closeAdminModal();
+    unlockAdmin();
+    showPage('new-post', null);
+    showToast('Welcome, Juvae');
+  } else {
+    input.classList.remove('error');
+    void input.offsetWidth;
+    input.classList.add('error');
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+  }
+}
+
+if (new URLSearchParams(window.location.search).get('admin') === 'true') {
+  window.addEventListener('DOMContentLoaded', () => openAdminModal(), { once: true });
+}
+
+// ---- RENDER POSTS ----
+function renderPosts(filter) {
+  ['posts-container', 'posts-container-2'].forEach(id => {
+    const container = document.getElementById(id);
+    if (!container) return;
+    const filtered = filter === 'all' ? posts : posts.filter(p => p.tag === filter);
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state">No passages in this category yet.</div>';
+      return;
+    }
+    container.innerHTML = filtered.map((post, i) => `
+      <div class="post-card" style="animation-delay:${i * 0.07}s" onclick="openPost(${post.id})">
+        <div>
+          <div class="post-meta">
+            <span class="post-tag ${tagColors[post.tag] || ''}">${post.tag}</span>
+            <span class="post-date">${post.date}</span>
+          </div>
+          <div class="post-title">${post.title}</div>
+          <div class="post-excerpt">${post.excerpt}</div>
+          ${post.hasAudio ? `<div class="audio-pill">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 5h2v6H3V5zm4-2h2v10H7V3zm4 3h2v4h-2V6z"/></svg>
+            Audio reading
+          </div>` : ''}
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+          ${isAdmin ? `<div style="display:flex; gap:0.4rem;">
+            <button class="edit-btn" onclick="event.stopPropagation(); editPost(${post.id})">Edit</button>
+            <button class="delete-btn" onclick="event.stopPropagation(); openDeleteModal(${post.id})">Delete</button>
+          </div>` : ''}
+          <div class="post-read-arrow">→</div>
+        </div>
+      </div>
+    `).join('');
+  });
+}
+
+function filterPosts(tag, btn) {
+  currentFilter = tag;
+  document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPosts(tag);
+}
+
+// ---- OPEN POST ----
+function openPost(id) {
+  const post = posts.find(p => p.id === id);
+  if (!post) return;
+  document.getElementById('post-title-display').textContent = post.title;
+  document.getElementById('post-date-display').textContent = post.date;
+  const tagEl = document.getElementById('post-tag-display');
+  tagEl.textContent = post.tag;
+  tagEl.className = 'post-tag ' + (tagColors[post.tag] || '');
+  document.getElementById('post-body-display').innerHTML = post.body.split('\n\n').map(p => `<p>${p}</p>`).join('');
+  const playerWrap = document.getElementById('audio-player-wrap');
+  if (post.hasAudio) {
+    playerWrap.style.display = 'flex';
+    document.getElementById('audio-file-name').textContent = post.audioName || 'Audio reading';
+    if (post.audioUrl) {
+      audioEl.src = post.audioUrl;
+    } else if (currentAudioFile) {
+      audioEl.src = URL.createObjectURL(currentAudioFile);
+    } else {
+      audioEl.src = '';
+    }
+    resetPlayer();
+  } else {
+    playerWrap.style.display = 'none';
+    resetPlayer();
+  }
+  const editBtn = document.getElementById('post-edit-btn');
+  const deleteBtn = document.getElementById('post-delete-btn');
+  if (editBtn) editBtn.style.display = isAdmin ? '' : 'none';
+  if (deleteBtn) deleteBtn.style.display = isAdmin ? '' : 'none';
+  editBtn._postId = id;
+  deleteBtn._postId = id;
+
+  const currentIndex = posts.findIndex(p => p.id === id);
+  const currentPost = posts[currentIndex];
+  const sameCat = posts.filter(p => p.id !== id && p.tag === currentPost.tag);
+  const pool = sameCat.length > 0 ? sameCat : posts.filter(p => p.id !== id);
+  const nextPost = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
+  const nextSection = document.getElementById('next-post-section');
+  if (nextPost) {
+    document.getElementById('next-post-title').textContent = nextPost.title;
+    document.getElementById('next-post-excerpt').textContent = nextPost.excerpt;
+    document.getElementById('next-post-label').textContent = sameCat.length > 0 ? `Another ${currentPost.tag.toLowerCase()}` : 'You might also like';
+    nextSection.style.display = '';
+    nextSection._nextId = nextPost.id;
+  } else {
+    nextSection.style.display = 'none';
+  }
+  showPage('post', null);
+}
+
+// ---- PLAYER ----
+function resetPlayer() {
+  isPlaying = false;
+  document.getElementById('play-icon').style.display = '';
+  document.getElementById('pause-icon').style.display = 'none';
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('player-time').textContent = '0:00 / 0:00';
+  audioEl.pause();
+  audioEl.currentTime = 0;
+}
+
+function togglePlay() {
+  if (!audioEl.src || audioEl.src === window.location.href) {
+    showToast('No audio file available');
+    return;
+  }
+  if (isPlaying) {
+    audioEl.pause(); isPlaying = false;
+    document.getElementById('play-icon').style.display = '';
+    document.getElementById('pause-icon').style.display = 'none';
+  } else {
+    audioEl.play(); isPlaying = true;
+    document.getElementById('play-icon').style.display = 'none';
+    document.getElementById('pause-icon').style.display = '';
+  }
+}
+
+let lastProgressUpdate = 0;
+audioEl.addEventListener('timeupdate', () => {
+  const now = Date.now();
+  if (now - lastProgressUpdate < 100) return;
+  lastProgressUpdate = now;
+  if (audioEl.duration) {
+    document.getElementById('progress-fill').style.width = (audioEl.currentTime / audioEl.duration * 100) + '%';
+    document.getElementById('player-time').textContent = fmt(audioEl.currentTime) + ' / ' + fmt(audioEl.duration);
+  }
+});
+audioEl.addEventListener('ended', () => {
+  isPlaying = false;
+  document.getElementById('play-icon').style.display = '';
+  document.getElementById('pause-icon').style.display = 'none';
+});
+
+function seekAudio(e) {
+  if (!audioEl.duration) return;
+  const rect = document.getElementById('progress-wrap').getBoundingClientRect();
+  audioEl.currentTime = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * audioEl.duration;
+}
+
+function fmt(s) {
+  return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+}
+
+// ---- PAGE NAV ----
+function showPage(name, linkEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  if (linkEl) linkEl.classList.add('active');
+  window.scrollTo(0, 0);
+  if (name === 'archive' || name === 'home') renderPosts(currentFilter);
+  progressBar.style.opacity = name === 'post' ? '1' : '0';
+  progressBar.style.width = '0%';
+}
+
+// ---- EDITOR ----
+function selectTag(btn, tag) {
+  document.querySelectorAll('.tag-select-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedTag = tag;
+}
+
+function formatText(cmd) {
+  const ta = document.getElementById('post-body-input');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = ta.value.substring(s, e);
+  if (!sel) return;
+  const w = cmd === 'bold' ? '**' : '_';
+  ta.setRangeText(w + sel + w, s, e, 'end');
+}
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover'); }
+function handleDragLeave() { document.getElementById('drop-zone').classList.remove('dragover'); }
+function handleDrop(e) {
+  e.preventDefault(); document.getElementById('drop-zone').classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('audio/')) setAudioFile(f);
+}
+function handleAudioSelect(e) { 
+  const file = e.target.files[0];
+  console.log('handleAudioSelect fired, file:', file ? file.name : 'none');
+  if (file) setAudioFile(file); 
+}
+function setAudioFile(file) {
+  console.log('Audio file selected:', file.name, 'size:', file.size, 'type:', file.type);
+  currentAudioFile = file;
+  document.getElementById('audio-chosen-name').textContent = file.name;
+  document.getElementById('audio-chosen-preview').classList.add('visible');
+  console.log('currentAudioFile set to:', currentAudioFile ? currentAudioFile.name : 'null');
+}
+
+let editingPostId = null;
+
+let removeAudioOnSave = false;
+
+function editPost(id) {
+  const post = posts.find(p => p.id === id);
+  if (!post) return;
+  editingPostId = id;
+  removeAudioOnSave = false;
+  document.getElementById('post-title-input').value = post.title;
+  document.getElementById('post-body-input').value = post.body;
+  document.querySelectorAll('.tag-select-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === post.tag);
+  });
+  selectedTag = post.tag;
+  document.querySelector('.editor-eyebrow').textContent = 'Admin · Editing Post';
+  document.querySelector('.editor-wrap h2').textContent = 'Edit this passage';
+  document.querySelector('.btn-publish').textContent = 'Save Changes';
+
+  // Show current audio status if post has audio
+  const audioStatus = document.getElementById('current-audio-status');
+  const currentAudioName = document.getElementById('current-audio-name');
+  const dropZone = document.getElementById('drop-zone');
+  if (post.hasAudio && post.audioName) {
+    audioStatus.style.display = 'flex';
+    currentAudioName.textContent = post.audioName;
+    dropZone.style.opacity = '0.4';
+    dropZone.style.pointerEvents = 'none';
+    document.getElementById('drop-text').textContent = 'Remove current audio first to replace';
+  } else {
+    audioStatus.style.display = 'none';
+    dropZone.style.opacity = '';
+    dropZone.style.pointerEvents = '';
+    document.getElementById('drop-text').textContent = 'Drop your audio reading here';
+  }
+
+  document.getElementById('audio-chosen-preview').classList.remove('visible');
+  currentAudioFile = null;
+  showPage('new-post', null);
+}
+
+function removeAudio() {
+  removeAudioOnSave = true;
+  document.getElementById('current-audio-status').style.display = 'none';
+  const dropZone = document.getElementById('drop-zone');
+  dropZone.style.opacity = '';
+  dropZone.style.pointerEvents = '';
+  document.getElementById('drop-text').textContent = 'Drop your audio reading here';
+  showToast('Audio will be removed on save');
+}
+
+function editCurrentPost() {
+  const id = document.getElementById('post-edit-btn')._postId;
+  if (id) editPost(id);
+}
+
+async function uploadAudio(file) {
+  const ext = file.name.split('.').pop();
+  const fileName = Date.now() + '.' + ext;
+  console.log('Uploading audio:', file.name, 'size:', file.size, 'type:', file.type);
+  console.log('Upload URL:', SUPABASE_URL + '/storage/v1/object/audio/' + fileName);
+  const res = await fetch(SUPABASE_URL + '/storage/v1/object/audio/' + fileName, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  console.log('Audio upload response:', res.status, res.statusText);
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('Audio upload error:', err);
+    throw new Error('Audio upload failed: ' + err);
+  }
+  const publicUrl = SUPABASE_URL + '/storage/v1/object/public/audio/' + fileName;
+  console.log('Audio uploaded successfully:', publicUrl);
+  return publicUrl;
+}
+
+async function publishPost() {
+  console.log('publishPost called, currentAudioFile:', currentAudioFile ? currentAudioFile.name : 'null');
+  const title = document.getElementById('post-title-input').value.trim();
+  const body = document.getElementById('post-body-input').value.trim();
+  if (!title) { showToast('Please add a title'); return; }
+  if (!body) { showToast('Please write something'); return; }
+  const tag = selectedTag || 'Essay';
+  const excerpt = body.split('.')[0] + '.';
+
+  try {
+    let audioUrl = null;
+    let audioName = null;
+    if (currentAudioFile) {
+      showToast('Uploading audio…');
+      audioUrl = await uploadAudio(currentAudioFile);
+      audioName = currentAudioFile.name;
+    }
+
+    if (editingPostId) {
+      const updateData = { title, body, tag, excerpt };
+      if (audioUrl) { updateData.has_audio = true; updateData.audio_name = audioName; updateData.audio_url = audioUrl; }
+      if (removeAudioOnSave) { updateData.has_audio = false; updateData.audio_name = null; updateData.audio_url = null; }
+      removeAudioOnSave = false;
+      await sbFetch('posts?id=eq.' + editingPostId, { method: 'PATCH', body: JSON.stringify(updateData) });
+      editingPostId = null;
+      showToast('Changes saved');
+    } else {
+      const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      await sbFetch('posts', {
+        method: 'POST',
+        body: JSON.stringify({ title, body, tag, excerpt, date: dateStr, has_audio: !!audioUrl, audio_name: audioName, audio_url: audioUrl })
+      });
+      showToast('Published to the archive');
+    }
+
+    document.getElementById('post-title-input').value = '';
+    document.getElementById('post-body-input').value = '';
+    document.getElementById('audio-chosen-preview').classList.remove('visible');
+    document.getElementById('current-audio-status').style.display = 'none';
+    document.getElementById('drop-zone').style.opacity = '';
+    document.getElementById('drop-zone').style.pointerEvents = '';
+    document.getElementById('drop-text').textContent = 'Drop your audio reading here';
+    document.querySelectorAll('.tag-select-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.editor-eyebrow').textContent = 'Admin · New Post';
+    document.querySelector('.editor-wrap h2').textContent = 'Write into the threshold';
+    document.querySelector('.btn-publish').textContent = 'Publish';
+    selectedTag = null; currentAudioFile = null;
+    await loadPosts();
+    setTimeout(() => showPage('archive', null), 400);
+  } catch (e) {
+    showToast('Error: ' + e.message.substring(0, 60));
+    console.error(e);
+  }
+}
+
+let deletingPostId = null;
+
+function openDeleteModal(id) {
+  const post = posts.find(p => p.id === id);
+  if (!post) return;
+  deletingPostId = id;
+  document.getElementById('delete-title-preview').textContent = '"' + post.title + '"';
+  document.getElementById('delete-modal').classList.add('visible');
+}
+
+function openDeleteModalFromPost() {
+  const id = document.getElementById('post-delete-btn')._postId;
+  if (id) openDeleteModal(id);
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.remove('visible');
+  deletingPostId = null;
+}
+
+async function confirmDelete() {
+  if (!deletingPostId) return;
+  try {
+    await sbFetch('posts?id=eq.' + deletingPostId, { method: 'DELETE', prefer: 'return=minimal' });
+    closeDeleteModal();
+    showToast('Post deleted');
+    await loadPosts();
+    showPage('archive', null);
+  } catch (e) {
+    showToast('Error deleting — check connection');
+    console.error(e);
+  }
+}
+
+function openRandomPost() {
+  if (!posts.length) { showToast('No posts yet'); return; }
+  const randomPost = posts[Math.floor(Math.random() * posts.length)];
+  const flash = document.createElement('div');
+  flash.style.cssText = 'position:fixed;inset:0;background:var(--ember);opacity:0;z-index:9999;pointer-events:none;transition:opacity 0.25s ease;';
+  document.body.appendChild(flash);
+  requestAnimationFrame(() => {
+    flash.style.opacity = '0.15';
+    setTimeout(() => {
+      openPost(randomPost.id);
+      flash.style.opacity = '0';
+      setTimeout(() => flash.remove(), 300);
+    }, 250);
+  });
+}
+
+function openNextPost() {
+  const id = document.getElementById('next-post-section')._nextId;
+  if (id) openPost(id);
+}
+
+function sharePost() {
+  const url = window.location.href.split('?')[0];
+  const title = document.getElementById('post-title-display').textContent;
+  const shareUrl = url + '?post=' + encodeURIComponent(title);
+  navigator.clipboard.writeText(shareUrl).then(() => {
+    const btn = document.getElementById('share-btn');
+    const label = document.getElementById('share-btn-label');
+    btn.classList.add('copied');
+    label.textContent = 'Link copied';
+    setTimeout(() => { btn.classList.remove('copied'); label.textContent = 'Share'; }, 2200);
+  }).catch(() => showToast('Could not copy link'));
+}
+
+function exportPosts() {
+  const data = JSON.stringify(posts, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'posts.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('posts.json downloaded');
+}
+
+// ---- HOMEPAGE COPY ----
+async function loadHomepageCopy() {
+  try {
+    const data = await sbFetch('site_settings?key=in.(hero_eyebrow,hero_headline,hero_tagline)');
+    if (!data || !data.length) return;
+    const settings = {};
+    data.forEach(r => settings[r.key] = r.value);
+    if (settings.hero_eyebrow) document.getElementById('hero-eyebrow').textContent = settings.hero_eyebrow;
+    if (settings.hero_headline) document.getElementById('hero-headline').innerHTML = settings.hero_headline.replace('Experience', '<em>Experience</em>');
+    if (settings.hero_tagline) {
+      document.getElementById('hero-tagline').innerHTML = settings.hero_tagline
+        .split('\n\n').filter(p => p.trim())
+        .map(p => `<p>${p.trim()}</p>`).join('');
+    }
+  } catch(e) { console.error('Could not load homepage copy:', e); }
+}
+
+async function openHomepageEditor() {
+  try {
+    const data = await sbFetch('site_settings?key=in.(hero_eyebrow,hero_headline,hero_tagline)');
+    const settings = {};
+    (data || []).forEach(r => settings[r.key] = r.value);
+    document.getElementById('home-eyebrow-input').value = settings.hero_eyebrow || '';
+    document.getElementById('home-headline-input').value = settings.hero_headline || '';
+    document.getElementById('home-tagline-input').value = settings.hero_tagline || '';
+  } catch(e) { console.error(e); }
+  showPage('edit-home', null);
+}
+
+async function saveHomepageCopy() {
+  const eyebrow = document.getElementById('home-eyebrow-input').value.trim();
+  const headline = document.getElementById('home-headline-input').value.trim();
+  const tagline = document.getElementById('home-tagline-input').value.trim();
+  if (!headline) { showToast('Please add a headline'); return; }
+  try {
+    await sbFetch('site_settings', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify([
+        { key: 'hero_eyebrow', value: eyebrow },
+        { key: 'hero_headline', value: headline },
+        { key: 'hero_tagline', value: tagline }
+      ])
+    });
+    await loadHomepageCopy();
+    showToast('Homepage updated');
+    setTimeout(() => showPage('home', null), 600);
+  } catch(e) {
+    showToast('Error saving — check connection');
+    console.error(e);
+  }
+}
+
+async function testConnection() {
+  showToast('Testing connection…');
+  try {
+    const result = await sbFetch('posts?limit=1');
+    showToast('Connected! Posts table found ✓');
+    console.log('Connection test result:', result);
+  } catch (e) {
+    showToast('Connection failed: ' + e.message.substring(0, 60));
+    console.error('Connection test error:', e);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+loadPosts();
+loadHomepageCopy();
+</script>
+</body>
+</html>
